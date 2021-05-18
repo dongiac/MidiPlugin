@@ -1,2 +1,2 @@
-#MidiPlugin
+# MidiPlugin
 Midi MPE plugin
