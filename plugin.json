@@ -4,13 +4,23 @@
   "version": "1.00",
   "license": "proprietary",
   "brand": "DG",
-  "author": "",
-  "authorEmail": "\u001b[A\u001b[B",
+  "author": "Giacomo Di Giovanni",
+  "authorEmail": "",
   "authorUrl": "",
   "pluginUrl": "",
   "manualUrl": "",
   "sourceUrl": "",
   "donateUrl": "",
   "changelogUrl": "",
-  "modules": []
+  "modules": [
+    {
+      "slug": "midiPlugin",
+      "name": "MidiMPE",
+      "description": "",
+      "tags": [
+        "midi",
+        "mpe"
+      ]
+    }
+  ]
 }
