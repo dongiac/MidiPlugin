@@ -1,6 +1,6 @@
 {
-  "slug": "MidiPlugin",
-  "name": "MidiPlugin",
+  "slug": "MidiMPE",
+  "name": "MidiMPE",
   "version": "1.00",
   "license": "proprietary",
   "brand": "DG",
@@ -14,7 +14,7 @@
   "changelogUrl": "",
   "modules": [
     {
-      "slug": "midiPlugin",
+      "slug": "MidiMPE",
       "name": "MidiMPE",
       "description": "",
       "tags": [
