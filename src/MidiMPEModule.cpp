@@ -52,7 +52,7 @@ struct MidiMPEModuleWidget : ModuleWidget {
 
 		//Modulo per scelta ingressi MIDI 
 		MidiWidget* midiWidget = createWidget<MidiWidget>(mm2px(Vec(3.41891, 14.8373)));
-		midiWidget->box.size = mm2px(Vec(33.840, 28));
+		midiWidget->box.size = mm2px(Vec(47.840, 28));
 		midiWidget->setMidiPort(module ? &module->midiInput : NULL);
 		addChild(midiWidget);
 	}
