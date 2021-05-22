@@ -70,13 +70,13 @@ struct MidiMPEModuleWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		//Modulo per scelta ingressi MIDI 
-		MidiWidget* midiWidget = createWidget<MidiWidget>(mm2px(Vec(3.41891, 14.8373)));
-		midiWidget->box.size = mm2px(Vec(50, 28));
+		MidiWidget* midiWidget = createWidget<MidiWidget>(mm2px(Vec(5, 20)));
+		midiWidget->box.size = mm2px(Vec(47, 28));
 		midiWidget->setMidiPort(module ? &module->midiInput : NULL);
 		addChild(midiWidget);
 
 		//Mette sulla GUI del module il led indicato nell'ultimo parametro 
-		addChild(createLightCentered<LargeLight<GreenLight>>(Vec(80, 150), module, MidiMPEModule::NOTEONLIGHT));
+		addChild(createLightCentered<LargeLight<GreenLight>>(Vec(80, 165), module, MidiMPEModule::NOTEONLIGHT));
 
 	}
 
