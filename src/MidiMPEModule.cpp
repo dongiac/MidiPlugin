@@ -14,6 +14,13 @@ struct MidiMPEModule : Module {
 	};
 
 	enum OutputIds {
+		VOCT,
+		GATE,
+		STRIKE,
+		PRESS,
+		GLIDE,
+		SLIDE,
+		LIFT,
 		NUM_OUTPUTS,
 	};
 
@@ -35,19 +42,23 @@ struct MidiMPEModule : Module {
 	void process(const ProcessArgs &args) override {
 
 		midi::Message msg;
+		
+		int NumberOfChannels = 15;
+	
+
+		//Setto gli Output tutti a NumberOfChannels
+		outputs[VOCT].setChannels(NumberOfChannels);
+		outputs[GATE].setChannels(NumberOfChannels);
+		outputs[STRIKE].setChannels(NumberOfChannels);
+		outputs[PRESS].setChannels(NumberOfChannels);
+		outputs[GLIDE].setChannels(NumberOfChannels);
+		outputs[SLIDE].setChannels(NumberOfChannels);
+		outputs[LIFT].setChannels(NumberOfChannels);
+
 
 		while (midiInput.shift(&msg)) {
-			
-			//Blink if note ON
-			if(msg.getStatus()==0x9){ //Se lo status è "note ON" accendi LED
 
-				lights[NOTEONLIGHT].setBrightness(1);
-				
-			}else {
-				
-				lights[NOTEONLIGHT].setBrightness(0); //qualsiasi altro messaggio spegne
-				
-			}
+
 		}
 	}
 
@@ -76,7 +87,18 @@ struct MidiMPEModuleWidget : ModuleWidget {
 		addChild(midiWidget);
 
 		//Mette sulla GUI del module il led indicato nell'ultimo parametro 
-		addChild(createLightCentered<LargeLight<GreenLight>>(Vec(80, 165), module, MidiMPEModule::NOTEONLIGHT));
+		//addChild(createLightCentered<LargeLight<GreenLight>>(Vec(50, NumberOfChannels5), module, MidiMPEModule::NOTEONLIGHT));
+
+		//Output generici MIDI
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,70.4)), module, MidiMPEModule::VOCT));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,98.7)), module, MidiMPEModule::GATE));
+
+		//Output Specifici MPE
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,56)), module, MidiMPEModule::STRIKE));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,70.4)), module, MidiMPEModule::PRESS));		
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,84.5)), module, MidiMPEModule::GLIDE));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,98.7)), module, MidiMPEModule::SLIDE));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,113)), module, MidiMPEModule::LIFT));
 
 	}
 
