@@ -29,6 +29,16 @@ struct MidiMPEModule : Module {
 		NUM_LIGHTS,
 	};
 
+	uint8_t notes[16];//vettore dove vengono salvate le note 
+	uint8_t strike[16]; //note on velocity
+	uint8_t lift[16]; //note off velocity
+	uint8_t press[16]; //aftertouch
+	uint16_t glide[16]; //va da 0 a 16535 con 8192 posizione neutrale
+	uint8_t slide[16]; //0xb il controller[data 0] è il 74, il valore[data 1] 0-127
+	
+	//variabile bool [On / OFF] per mandare segnale di gate, brutto ma per ora è così
+	bool gates[16] = {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false};  
+
 	midi::InputQueue midiInput; 
 
 
@@ -55,9 +65,56 @@ struct MidiMPEModule : Module {
 		outputs[SLIDE].setChannels(NumberOfChannels);
 		outputs[LIFT].setChannels(NumberOfChannels);
 
+		//settare i Voltage di tutti i channel
+		for(int channel = 0; channel<16; channel++){
+			//ci sono da 0 a 11 ottave, ogni ottava è 12 "unità", se pongo 0V = C5 (60) allora vado da -5V(C0) a 5V(C11)
+			//qualsiasi è la nota sottraggo 60, centrandomi in C5 e divido per le 12 unità ottenendo 1V per ottava
+			outputs[VOCT].setVoltage((notes[channel] - 60.f) - 12.f, channel);
+			//controlla il gate di ogni canale, se true 10v se false 0V
+			outputs[GATE].setVoltage(gates[channel] ? 10.f : 0.f, channel);
+
+		}
+
+
 
 		while (midiInput.shift(&msg)) {
+			
+			switch(msg.getStatus()){
 
+				case 0x8: {
+					//Note OFF
+					int channel = msg.getChannel(); 
+					notes[channel] = msg.getNote();
+					gates[channel] = false;	
+						//Prendo qui la Velocity (Lift)
+						lift[channel] = msg.getValue();
+				} break;
+
+				case 0x9: {
+					//Note ON
+					int channel = msg.getChannel(); 
+					notes[channel] = msg.getNote();
+					gates[channel] = true;					
+						// prendo qui la Velocity (Strike)
+						strike[channel] = msg.getValue();
+				} break;
+
+				case 0xa: {
+					//Aftertouch (Press)
+				} break;
+
+				case 0xe: {
+					//Pitch Wheel (Glide)
+				} break;
+
+				case 0xb: {
+					//CC74 (Slide)
+				} break;
+				default: break;
+
+
+
+			}
 
 		}
 	}
