@@ -33,12 +33,13 @@ struct MidiMPEModule : Module {
 	uint8_t strike[16]; //note on velocity
 	uint8_t lift[16]; //note off velocity
 	uint8_t press[16]; //aftertouch
-	uint16_t glide[16]; //va da 0 a 16535 con 8192 posizione neutrale
 	uint8_t slide[16]; //0xb il controller[data 0] è il 74, il valore[data 1] 0-127
 	
-	//variabile bool [On / OFF] per mandare segnale di gate, brutto ma per ora è così
+	//variabile bool [On / OFF] per mandare segnale di gate
 	bool gates[16] = {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false};  
-
+	// Inizializza i Glide in posizione Neutra
+	float glide[16] = {8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,};
+	
 	midi::InputQueue midiInput; 
 
 
@@ -54,7 +55,6 @@ struct MidiMPEModule : Module {
 		midi::Message msg;
 		
 		int NumberOfChannels = 15;
-	
 
 		//Setto gli Output tutti a NumberOfChannels
 		outputs[VOCT].setChannels(NumberOfChannels);
@@ -64,7 +64,7 @@ struct MidiMPEModule : Module {
 		outputs[GLIDE].setChannels(NumberOfChannels);
 		outputs[SLIDE].setChannels(NumberOfChannels);
 		outputs[LIFT].setChannels(NumberOfChannels);
-
+		
 		//settare i Voltage di tutti i channel
 		for(int channel = 0; channel<16; channel++){
 			//ci sono da 0 a 11 ottave, ogni ottava è 12 "unità", se pongo 0V = C5 (60) allora vado da -5V(C0) a 5V(C11)
@@ -78,7 +78,7 @@ struct MidiMPEModule : Module {
 			outputs[PRESS].setVoltage((press[channel] / 127.f) * 10.f, channel);
 			outputs[SLIDE].setVoltage((slide[channel] / 127.f) * 10.f, channel);
 			// output glide tra -5V e 5V
-			outputs[GLIDE].setVoltage(((glide[channel]) * 10.f / 16384.f -5.f), channel);
+			outputs[GLIDE].setVoltage(((((glide[channel]) * 10.f )/ 16384.f ) - 5.f), channel);
 			//outputs[GLIDE].setVoltage(glide[channel] / 16384.f, channel);
 			 
 		}
@@ -96,6 +96,7 @@ struct MidiMPEModule : Module {
 					gates[channel] = false;	
 						//Prendo la Velocity (Lift)
 						lift[channel] = msg.getValue();
+						glide[channel] = 8192.f;// togliere
 				} break;
 
 				case 0x9: {
@@ -105,6 +106,9 @@ struct MidiMPEModule : Module {
 					gates[channel] = true;					
 						// prendo la Velocity (Strike)
 						strike[channel] = msg.getValue();
+					if (strike[channel] == 0){
+						gates[channel] = false;
+					}
 
 				} break;
 
@@ -140,8 +144,7 @@ struct MidiMPEModule : Module {
 					}
 				} break;
 				default: break;
-
-
+				
 
 			}
 
