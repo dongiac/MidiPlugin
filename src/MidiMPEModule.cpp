@@ -96,7 +96,6 @@ struct MidiMPEModule : Module {
 					gates[channel] = false;	
 						//Prendo la Velocity (Lift)
 						lift[channel] = msg.getValue();
-						glide[channel] = 8192.f;// togliere
 				} break;
 
 				case 0x9: {
