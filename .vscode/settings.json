@@ -20,5 +20,6 @@
         "vector": "cpp",
         "string_view": "cpp"
     },
-    "C_Cpp.errorSquiggles": "Enabled"
+    "C_Cpp.errorSquiggles": "Enabled",
+    "git.ignoreLimitWarning": true
 }

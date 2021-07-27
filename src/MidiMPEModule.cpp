@@ -5,7 +5,9 @@ using namespace std;
 /* MODULE */
 struct MidiMPEModule : Module {
 	enum ParamIds {
+		MODE_POLY,
 		NUM_PARAMS,
+		
 	};
 
 	enum InputIds {
@@ -29,23 +31,24 @@ struct MidiMPEModule : Module {
 		NUM_LIGHTS,
 	};
 
-	uint8_t notes[16];//vettore dove vengono salvate le note 
+	uint8_t notes[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//vettore dove vengono salvate le note 
 	uint8_t strike[16]; //note on velocity
 	uint8_t lift[16]; //note off velocity
-	uint8_t press[16]; //aftertouch
+	uint8_t press[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //aftertouch
 	uint8_t slide[16]; //0xb il controller[data 0] è il 74, il valore[data 1] 0-127
 	
 	//variabile bool [On / OFF] per mandare segnale di gate
 	bool gates[16] = {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false};  
 	// Inizializza i Glide in posizione Neutra
 	float glide[16] = {8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,};
-	
+
 	midi::InputQueue midiInput; 
 
 
 	MidiMPEModule() {
 
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
+		configParam(MODE_POLY, 0.f, 1.f, 1.f,"Rotative MPE");
 
 	}
 
@@ -54,16 +57,17 @@ struct MidiMPEModule : Module {
 
 		midi::Message msg;
 		
-		int NumberOfChannels = 15;
+		int numberOfChannels = 15;
+		bool modePoly = params[MODE_POLY].getValue(); //1 MPE 0 Rotative
 
-		//Setto gli Output tutti a NumberOfChannels
-		outputs[VOCT].setChannels(NumberOfChannels);
-		outputs[GATE].setChannels(NumberOfChannels);
-		outputs[STRIKE].setChannels(NumberOfChannels);
-		outputs[PRESS].setChannels(NumberOfChannels);
-		outputs[GLIDE].setChannels(NumberOfChannels);
-		outputs[SLIDE].setChannels(NumberOfChannels);
-		outputs[LIFT].setChannels(NumberOfChannels);
+		//Setto gli Output tutti a numberOfChannels
+		outputs[VOCT].setChannels(numberOfChannels);
+		outputs[GATE].setChannels(numberOfChannels);
+		outputs[STRIKE].setChannels(numberOfChannels);
+		outputs[PRESS].setChannels(numberOfChannels);
+		outputs[GLIDE].setChannels(numberOfChannels);
+		outputs[SLIDE].setChannels(numberOfChannels);
+		outputs[LIFT].setChannels(numberOfChannels);
 		
 		//settare i Voltage di tutti i channel
 		for(int channel = 0; channel<16; channel++){
@@ -79,67 +83,80 @@ struct MidiMPEModule : Module {
 			outputs[SLIDE].setVoltage((slide[channel] / 127.f) * 10.f, channel);
 			// output glide tra -5V e 5V
 			outputs[GLIDE].setVoltage(((((glide[channel]) * 10.f )/ 16384.f ) - 5.f), channel);
-			//outputs[GLIDE].setVoltage(glide[channel] / 16384.f, channel);
 			 
 		}
 
 	
 
 		while (midiInput.shift(&msg)) {
-			
+
 			switch(msg.getStatus()){
 
 				case 0x8: {
 					//Note OFF
-					int channel = msg.getChannel(); 
-					notes[channel] = msg.getNote();
-					gates[channel] = false;	
-						//Prendo la Velocity (Lift)
-						lift[channel] = msg.getValue();
+							for(int channel = 0; channel<16;channel++){
+								if(notes[channel] == msg.getNote()){
+									gates[channel] = false;
+										//Prendo la Velocity (Lift)
+									lift[channel] = msg.getValue();
+								}
+							}
+
 				} break;
 
 				case 0x9: {
 					//Note ON
-					int channel = msg.getChannel(); 
-					notes[channel] = msg.getNote();
-					gates[channel] = true;					
-						// prendo la Velocity (Strike)
-						strike[channel] = msg.getValue();
-					if (strike[channel] == 0){
-						gates[channel] = false;
+					int channel = msg.getChannel();
+					if(!modePoly){
+						while(gates[channel]){
+							channel++;
+							if(channel == 16){
+								channel = 0;
+								gates[channel] = false;
+							}
+						}
 					}
-
+						notes[channel] = msg.getNote();
+						gates[channel] = true;					
+							// prendo la Velocity (Strike)
+							strike[channel] = msg.getValue();
+						if (strike[channel] == 0){
+							gates[channel] = false;
+						}
 				} break;
 
-				//Essendo MPE, le note sono sui channel, quindi musicalmente non c'è differenza tra Poly e Channel pressure
 				case 0xa: {
 					//Poly Pressure
 					//Aftertouch (Press)
-					int channel = msg.getChannel();
-					press[channel] = msg.getValue();	
-									
+					if(modePoly)
+						press[msg.getChannel()] = msg.getValue();
+					else for(int channel = 0; channel<16; channel++){
+						if(notes[channel] == msg.getNote())
+							press[channel] = msg.getValue();
+					}
 				} break;
 
 				case 0xd: {
 					//Channel Pressure
 					//Aftertouch (Press)
-					int channel = msg.getChannel();
-					press[channel] = msg.getNote();	
+					press[msg.getChannel()] = msg.getNote();	//da modificare, ora c'è il rotative anche
 									
 				} break;
 
 				case 0xe: {
 					//Pitch Wheel (Glide)
-					int channel = msg.getChannel();
 					//Ho LSB (00-7F) su Note e MSB (00-7F) su Value, shifto value e sommo note
-					glide[channel] = ((uint16_t) msg.getValue() << 7) | msg.getNote();
+					if(modePoly){
+						glide[msg.getChannel()] = ((uint16_t) msg.getValue() << 7) | msg.getNote();
+					} else for(int channel = 0; channel<16; channel++){
+							glide[channel] = ((uint16_t) msg.getValue() << 7) | msg.getNote();
+						}
 				} break;
 
 				case 0xb: {
 					//CC74 (Slide)
-					int channel = msg.getChannel();
 					if(msg.getNote() == 74){ //la roli manda sul controller 74
-						slide[channel] = msg.getValue();
+						slide[msg.getChannel()] = msg.getValue();
 					}
 				} break;
 				default: break;
@@ -175,7 +192,10 @@ struct MidiMPEModuleWidget : ModuleWidget {
 		addChild(midiWidget);
 
 		//Mette sulla GUI del module il led indicato nell'ultimo parametro 
-		//addChild(createLightCentered<LargeLight<GreenLight>>(Vec(50, NumberOfChannels5), module, MidiMPEModule::NOTEONLIGHT));
+		//addChild(createLightCentered<LargeLight<GreenLight>>(Vec(50, numberOfChannels5), module, MidiMPEModule::NOTEONLIGHT));
+		
+		//Crea un interruttore per scegliere MPE o Rotative
+		addParam(createParam<CKSS>(mm2px(Vec(22, 55)), module, MidiMPEModule::MODE_POLY));
 
 		//Output generici MIDI
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,70.4)), module, MidiMPEModule::VOCT));

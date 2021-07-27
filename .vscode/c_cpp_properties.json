@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "C:/msys64/home/giaco/Rack/Rack/plugins/MidiPlugin/**",
                 "C:/msys64/home/giaco/Rack/Rack/**",
-                "C:/msys64/home/giaco/Rack/Rack/plugins/MidiPlugin/src"
+                "C:/msys64/home/giaco/Rack/Rack/plugins/MidiPlugin/src",
+                "C:/msys64/home/giaco/Rack/Rack/include"
             ],
             "defines": [
                 "_DEBUG",
