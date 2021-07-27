@@ -45,14 +45,10 @@ struct MidiMPEModule : Module {
 
 	midi::InputQueue midiInput; 
 
-
 	MidiMPEModule() {
-
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(MODE_POLY, 0.f, 1.f, 1.f,"Rotative MPE");
-
 	}
-
 
 	void process(const ProcessArgs &args) override {
 
@@ -61,7 +57,7 @@ struct MidiMPEModule : Module {
 		int numberOfChannels = 15;
 		bool modePoly = params[MODE_POLY].getValue(); //1 MPE 0 Rotative
 
-		//Setto gli Output tutti a numberOfChannels
+		//Set degli Output tutti a numberOfChannels
 		outputs[VOCT].setChannels(numberOfChannels);
 		outputs[GATE].setChannels(numberOfChannels);
 		outputs[STRIKE].setChannels(numberOfChannels);
@@ -73,24 +69,25 @@ struct MidiMPEModule : Module {
 		
 		//settare i Voltage di tutti i channel
 		for(int channel = 0; channel<16; channel++){
+
 			//ci sono da 0 a 11 ottave, ogni ottava è 12 "unità", se pongo 0V = C5 (60) allora vado da -5V(C0) a 5V(C11)
 			//qualsiasi è la nota sottraggo 60, centrandomi in C5 e divido per le 12 unità ottenendo 1V per ottava
 			outputs[VOCT].setVoltage((notes[channel] - 60.f) / 12.f, channel);
+
 			//controlla il gate di ogni canale, se true 10v se false 0V
 			outputs[GATE].setVoltage(gates[channel] ? 10.f : 0.f, channel);
+
 			//output da range 0-127 a 0-10
 			outputs[STRIKE].setVoltage((strike[channel] / 127.f) * 10.f, channel);
 			outputs[LIFT].setVoltage((lift[channel] / 127.f) * 10.f, channel);
 			outputs[PRESS].setVoltage((press[channel] / 127.f) * 10.f, channel);
 			outputs[SLIDE].setVoltage((slide[channel] / 127.f) * 10.f, channel);
 			outputs[MODWHEEL].setVoltage((modwheel[channel] / 127.f) * 10.f, channel);
+
 			// output glide tra -5V e 5V
 			outputs[GLIDE].setVoltage(((((glide[channel]) * 10.f )/ 16384.f ) - 5.f), channel);
 		
-			 
 		}
-
-	
 
 		while (midiInput.shift(&msg)) {
 
@@ -105,7 +102,6 @@ struct MidiMPEModule : Module {
 									lift[channel] = msg.getValue();
 								}
 							}
-
 				} break;
 
 				case 0x9: {
@@ -172,18 +168,12 @@ struct MidiMPEModule : Module {
 						}
 					}
 				} break;
+
 				default: break;
-				
-
 			}
-
 		}
 	}
-
-
 };
-
-
 
 /* MODULE WIDGET */
 struct MidiMPEModuleWidget : ModuleWidget {
@@ -203,9 +193,6 @@ struct MidiMPEModuleWidget : ModuleWidget {
 		midiWidget->box.size = mm2px(Vec(47, 28));
 		midiWidget->setMidiPort(module ? &module->midiInput : NULL);
 		addChild(midiWidget);
-
-		//Mette sulla GUI del module il led indicato nell'ultimo parametro 
-		//addChild(createLightCentered<LargeLight<GreenLight>>(Vec(50, numberOfChannels5), module, MidiMPEModule::NOTEONLIGHT));
 		
 		//Crea un interruttore per scegliere MPE o Rotative
 		addParam(createParam<CKSS>(mm2px(Vec(22, 55)), module, MidiMPEModule::MODE_POLY));
@@ -215,7 +202,6 @@ struct MidiMPEModuleWidget : ModuleWidget {
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,98.7)), module, MidiMPEModule::GATE));
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,84)), module, MidiMPEModule::MODWHEEL));
 
-
 		//Output Specifici MPE
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,56)), module, MidiMPEModule::STRIKE));
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,70.4)), module, MidiMPEModule::PRESS));		
@@ -224,7 +210,5 @@ struct MidiMPEModuleWidget : ModuleWidget {
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,113)), module, MidiMPEModule::LIFT));
 
 	}
-
 };
-
 Model * modelMidiMPE = createModel<MidiMPEModule, MidiMPEModuleWidget>("MidiMPE");
