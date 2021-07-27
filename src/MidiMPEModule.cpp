@@ -23,6 +23,7 @@ struct MidiMPEModule : Module {
 		GLIDE,
 		SLIDE,
 		LIFT,
+		MODWHEEL,
 		NUM_OUTPUTS,
 	};
 
@@ -36,7 +37,7 @@ struct MidiMPEModule : Module {
 	uint8_t lift[16]; //note off velocity
 	uint8_t press[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //aftertouch
 	uint8_t slide[16]; //0xb il controller[data 0] è il 74, il valore[data 1] 0-127
-	
+	uint8_t modwheel[16] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	//variabile bool [On / OFF] per mandare segnale di gate
 	bool gates[16] = {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false};  
 	// Inizializza i Glide in posizione Neutra
@@ -68,6 +69,7 @@ struct MidiMPEModule : Module {
 		outputs[GLIDE].setChannels(numberOfChannels);
 		outputs[SLIDE].setChannels(numberOfChannels);
 		outputs[LIFT].setChannels(numberOfChannels);
+		outputs[MODWHEEL].setChannels(numberOfChannels);
 		
 		//settare i Voltage di tutti i channel
 		for(int channel = 0; channel<16; channel++){
@@ -81,8 +83,10 @@ struct MidiMPEModule : Module {
 			outputs[LIFT].setVoltage((lift[channel] / 127.f) * 10.f, channel);
 			outputs[PRESS].setVoltage((press[channel] / 127.f) * 10.f, channel);
 			outputs[SLIDE].setVoltage((slide[channel] / 127.f) * 10.f, channel);
+			outputs[MODWHEEL].setVoltage((modwheel[channel] / 127.f) * 10.f, channel);
 			// output glide tra -5V e 5V
 			outputs[GLIDE].setVoltage(((((glide[channel]) * 10.f )/ 16384.f ) - 5.f), channel);
+		
 			 
 		}
 
@@ -107,10 +111,10 @@ struct MidiMPEModule : Module {
 				case 0x9: {
 					//Note ON
 					int channel = msg.getChannel();
-					if(!modePoly){
-						while(gates[channel]){
-							channel++;
-							if(channel == 16){
+					if(!modePoly){ //se la modalità non è MPE
+						while(gates[channel]){ //se il gate è attivo su quel channel 
+							channel++; //vai al channel successivo
+							if(channel == 16){ //se arrivo a 16 assegna il channel zero e il gate false, si riattiva dopo quando salva la nota
 								channel = 0;
 								gates[channel] = false;
 							}
@@ -158,9 +162,14 @@ struct MidiMPEModule : Module {
 					if(msg.getNote() == 74){ //la roli manda sul controller 74
 						slide[msg.getChannel()] = msg.getValue();
 					}
-					//CC01 Mod Controller (?)
+					//CC01 Mod Controller
 					if(msg.getNote() == 01){
-						//???
+						if(modePoly){
+							modwheel[msg.getChannel()] = msg.getValue();	
+						}
+						else for (int i = 0; i <16; i++){
+							modwheel[i] = msg.getValue();
+						}
 					}
 				} break;
 				default: break;
@@ -204,6 +213,8 @@ struct MidiMPEModuleWidget : ModuleWidget {
 		//Output generici MIDI
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,70.4)), module, MidiMPEModule::VOCT));
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,98.7)), module, MidiMPEModule::GATE));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,84)), module, MidiMPEModule::MODWHEEL));
+
 
 		//Output Specifici MPE
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,56)), module, MidiMPEModule::STRIKE));
