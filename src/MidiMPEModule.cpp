@@ -158,6 +158,10 @@ struct MidiMPEModule : Module {
 					if(msg.getNote() == 74){ //la roli manda sul controller 74
 						slide[msg.getChannel()] = msg.getValue();
 					}
+					//CC01 Mod Controller (?)
+					if(msg.getNote() == 01){
+						//???
+					}
 				} break;
 				default: break;
 				
