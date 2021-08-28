@@ -10,7 +10,6 @@ struct MidiMPEModule : Module {
 	};
 
 	enum InputIds {
-		INPUT1,
 		NUM_INPUTS,
 	};
 
@@ -27,10 +26,10 @@ struct MidiMPEModule : Module {
 	};
 
 	enum LightsIds {
-		NOTEONLIGHT,
 		NUM_LIGHTS,
 	};
 
+<<<<<<< Updated upstream
 	bool modePoly = params[MODE_POLY].getValue(); //1 MPE 0 Rotative
 
 	uint8_t notes[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//vettore dove vengono salvate le note 
@@ -39,16 +38,38 @@ struct MidiMPEModule : Module {
 	uint8_t press[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //aftertouch
 	uint8_t slide[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //0xb il controller[data 0] è il 74, il valore[data 1] 0-127
 	uint8_t modwheel[16] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+=======
+	uint8_t notes[16];//vettore dove vengono salvate le note 
+	uint8_t strike[16]; //note on velocity
+	uint8_t lift[16]; //note off velocity
+	uint8_t press[16]; //aftertouch
+	uint8_t slide[16]; //0xb il controller[data 0] è il 74, il valore[data 1] 0-127
+	uint8_t modwheel[16];
+>>>>>>> Stashed changes
 	//variabile bool [On / OFF] per mandare segnale di gate
-	bool gates[16] = {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false};  
+	bool gates[16];  
 	// Inizializza i Glide in posizione Neutra
-	float glide[16] = {8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,8192.f,};
+	float glide[16];
 
 	midi::InputQueue midiInput; 
 
 	MidiMPEModule() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(MODE_POLY, 0.f, 1.f, 1.f,"Rotative MPE");
+		parameterSet();
+	}
+
+	void parameterSet(){
+		for (int c= 0; c<16; c++){
+			notes[c] = 60;
+			gates[c] = false;
+			strike[c] = 0;
+			lift[c] = 0;
+			glide[c] = 8192;
+			press[c]= 0;
+			slide[c] = 0;
+			modwheel[c] = 0;
+		}
 	}
 
 	void process(const ProcessArgs &args) override {
