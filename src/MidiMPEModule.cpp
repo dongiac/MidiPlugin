@@ -41,6 +41,8 @@ struct MidiMPEModule : Module {
 	// Inizializza i Glide in posizione Neutra
 	float glide[16];
 
+	bool modePoly = params[MODE_POLY].getValue(); //1 MPE 0 Rotative
+
 	midi::InputQueue midiInput; 
 
 	MidiMPEModule() {
@@ -65,19 +67,26 @@ struct MidiMPEModule : Module {
 	void process(const ProcessArgs &args) override {
 
 		midi::Message msg;
-		
+		while (midiInput.shift(&msg)) {
+			processMSG(msg);
+		}
 		int numberOfChannels = 15;
-		bool modePoly = params[MODE_POLY].getValue(); //1 MPE 0 Rotative
+		
 
 		//Set degli Output tutti a numberOfChannels
 		outputs[VOCT].setChannels(numberOfChannels);
 		outputs[GATE].setChannels(numberOfChannels);
 		outputs[STRIKE].setChannels(numberOfChannels);
 		outputs[PRESS].setChannels(numberOfChannels);
-		outputs[GLIDE].setChannels(numberOfChannels);
 		outputs[SLIDE].setChannels(numberOfChannels);
 		outputs[LIFT].setChannels(numberOfChannels);
-		outputs[MODWHEEL].setChannels(numberOfChannels);
+		if(modePoly){
+			outputs[GLIDE].setChannels(numberOfChannels);
+			outputs[MODWHEEL].setChannels(numberOfChannels);
+		} else {
+			outputs[GLIDE].setChannels(1);
+			outputs[MODWHEEL].setChannels(1);
+		}
 		
 		//settare i Voltage di tutti i channel
 		for(int channel = 0; channel<16; channel++){
@@ -85,103 +94,141 @@ struct MidiMPEModule : Module {
 			//ci sono da 0 a 11 ottave, ogni ottava è 12 "unità", se pongo 0V = C5 (60) allora vado da -5V(C0) a 5V(C11)
 			//qualsiasi è la nota sottraggo 60, centrandomi in C5 e divido per le 12 unità ottenendo 1V per ottava
 			outputs[VOCT].setVoltage((notes[channel] - 60.f) / 12.f, channel);
-
 			//controlla il gate di ogni canale, se true 10v se false 0V
 			outputs[GATE].setVoltage(gates[channel] ? 10.f : 0.f, channel);
-
 			//output da range 0-127 a 0-10
 			outputs[STRIKE].setVoltage((strike[channel] / 127.f) * 10.f, channel);
 			outputs[LIFT].setVoltage((lift[channel] / 127.f) * 10.f, channel);
 			outputs[PRESS].setVoltage((press[channel] / 127.f) * 10.f, channel);
 			outputs[SLIDE].setVoltage((slide[channel] / 127.f) * 10.f, channel);
-			outputs[MODWHEEL].setVoltage((modwheel[channel] / 127.f) * 10.f, channel);
-
-			// output glide tra -5V e 5V
-			outputs[GLIDE].setVoltage(((((glide[channel]) * 10.f )/ 16384.f ) - 5.f), channel);
-		
 		}
 
-		while (midiInput.shift(&msg)) {
+		if(modePoly){
+			for (int channel = 0; channel < 16; channel++){
+				outputs[MODWHEEL].setVoltage((modwheel[channel] / 127.f) * 10.f, channel);
+				// output glide tra -5V e 5V
+				outputs[GLIDE].setVoltage(((((glide[channel]) * 10.f )/ 16384.f ) - 5.f), channel);
+			} 
+		}else {
+				outputs[MODWHEEL].setVoltage((modwheel[0] / 127.f) * 10.f);
+				// output glide tra -5V e 5V
+				outputs[GLIDE].setVoltage(((((glide[0]) * 10.f )/ 16384.f ) - 5.f));
+		}
 
-			switch(msg.getStatus()){
 
-				case 0x8: {
-					//Note OFF
-							for(int channel = 0; channel<16;channel++){
-								if(notes[channel] == msg.getNote()){
-									gates[channel] = false;
-										//Prendo la Velocity (Lift)
-									lift[channel] = msg.getValue();
-								}
-							}
-				} break;
+	}
+	
+	void processMSG(midi::Message msg){
+		switch(msg.getStatus()){
 
-				case 0x9: {
-					//Note ON
-					int channel = msg.getChannel();
-					if(!modePoly){ //se la modalità non è MPE
-						while(gates[channel]){ //se il gate è attivo su quel channel 
-							channel++; //vai al channel successivo
-							if(channel == 16){ //se arrivo a 16 assegna il channel zero e il gate false, si riattiva dopo quando salva la nota
-								channel = 0;
-								gates[channel] = false;
-							}
-						}
-					}
-						notes[channel] = msg.getNote();
-						gates[channel] = true;					
-							// prendo la Velocity (Strike)
-							strike[channel] = msg.getValue();
-						if (strike[channel] == 0){
+			case 0x8: {
+				//Note OFF
+				noteOFF(msg.getNote(), msg.getValue());
+			} break;
+
+			case 0x9: {
+				//Note ON
+				if(msg.getValue() > 0){
+					int c = msg.getChannel();
+					noteON(msg.getNote(), &c);
+					strike[c] = msg.getValue();
+				}else noteOFF(msg.getNote(), 0);
+				/*
+				int channel = msg.getChannel();
+				if(!modePoly){ //se la modalità non è MPE
+					while(gates[channel] || notes[channel] != msg.getNote()){ //se il gate è attivo su quel channel 
+						channel++; //vai al channel successivo
+						if(channel == 16){ //se arrivo a 16 assegna il channel zero e il gate false, si riattiva dopo quando salva la nota
+							channel = 0;
 							gates[channel] = false;
 						}
-				} break;
-
-				case 0xa: {
-					//Poly Pressure
-					//Aftertouch (Press)
-					if(modePoly)
-						press[msg.getChannel()] = msg.getValue();
-					else for(int channel = 0; channel<16; channel++){
-						if(notes[channel] == msg.getNote())
-							press[channel] = msg.getValue();
 					}
-				} break;
+				}
+					notes[channel] = msg.getNote();
+					gates[channel] = true;					
+						// prendo la Velocity (Strike)
+						strike[channel] = msg.getValue();
+					if (strike[channel] == 0){
+						gates[channel] = false;
+					}*/
+			} break;
+			
+			case 0xa: {
+				//Poly Pressure
+				//Aftertouch (Press)
+				if(modePoly)
+					press[msg.getChannel()] = msg.getValue();
+				else for(int channel = 0; channel<16; channel++){
+					if(notes[channel] == msg.getNote())
+						press[channel] = msg.getValue();
+				}
+			} break;
 
-				case 0xd: {
-					//Channel Pressure
-					//Aftertouch (Press)
-					press[msg.getChannel()] = msg.getNote();	//da modificare, ora c'è il rotative anche
-									
-				} break;
+			case 0xd: {
+				//Channel Pressure
+				if(modePoly)
+					press[msg.getChannel()] = msg.getNote();
+				else for(int channel = 0; channel<16; channel++){
+						press[channel] = msg.getNote();
+				}
+			} break;
 
-				case 0xe: {
-					//Pitch Wheel (Glide)
-					//Ho LSB (00-7F) su Note e MSB (00-7F) su Value, shifto value e sommo note
+			case 0xe: {
+				//Pitch Wheel (Glide)
+				//Ho LSB (00-7F) su Note e MSB (00-7F) su Value, shifto value e sommo note
+				if(modePoly){
+					glide[msg.getChannel()] = ((uint16_t) msg.getValue() << 7) | msg.getNote();
+				} else {
+						glide[0] = ((uint16_t) msg.getValue() << 7) | msg.getNote();
+					}
+			} break;
+			
+			case 0xb: {
+				//CC74 (Slide)
+				if(msg.getNote() == 74){ //la roli manda sul controller 74
+					slide[msg.getChannel()] = msg.getValue();
+				}
+				//CC01 Mod Controller
+				if(msg.getNote() == 01){
 					if(modePoly){
-						glide[msg.getChannel()] = ((uint16_t) msg.getValue() << 7) | msg.getNote();
-					} else for(int channel = 0; channel<16; channel++){
-							glide[channel] = ((uint16_t) msg.getValue() << 7) | msg.getNote();
-						}
-				} break;
-
-				case 0xb: {
-					//CC74 (Slide)
-					if(msg.getNote() == 74){ //la roli manda sul controller 74
-						slide[msg.getChannel()] = msg.getValue();
+						modwheel[msg.getChannel()] = msg.getValue();	
 					}
-					//CC01 Mod Controller
-					if(msg.getNote() == 01){
-						if(modePoly){
-							modwheel[msg.getChannel()] = msg.getValue();	
-						}
-						else for (int i = 0; i <16; i++){
-							modwheel[i] = msg.getValue();
-						}
+					else{
+						modwheel[0] = msg.getValue();
 					}
-				} break;
+				}
+			} break;
 
-				default: break;
+			default: break;
+		}
+	}
+
+	int assignChannel (){
+		int channel;
+		for (channel = 0; channel<16; channel++){
+			if(!gates[channel]){
+				return channel;
+			}
+		}
+		channel++;
+		if (channel>16){
+			return 0;
+		}else return channel;
+	}
+
+	void noteON(uint8_t note, int* channel){
+		if(!modePoly){
+			*channel = assignChannel();
+		}
+		notes[*channel] = note;
+		gates[*channel] = true;
+	}
+
+	void noteOFF(uint8_t note, uint8_t value){
+		for(int i = 0; i<16; i++){
+			if(notes[i] == note){
+				gates[i] = false;
+				lift[i] = value;
 			}
 		}
 	}
