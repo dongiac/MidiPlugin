@@ -50,6 +50,7 @@ struct MidiMPEModule : Module {
 	//dsp filters
 	dsp::ExponentialFilter pitchF[16];
 	dsp::ExponentialFilter modwheelF[16];
+	dsp::ExponentialFilter pressFilter[16];
 
 	midi::InputQueue midiInput; 
 
@@ -59,6 +60,7 @@ struct MidiMPEModule : Module {
 		for (int i = 0; i<16 ; i++){
 			pitchF[i].setTau(1/30.f); //moltiplica di 30 la differenza tra i due sengali campionati nel deltaTime
 			modwheelF[i].setTau(1/30.f);
+			pressFilter[i].setTau(1/30.f);
 		}
 		parameterSet();
 	}
@@ -106,7 +108,7 @@ struct MidiMPEModule : Module {
 			//output da range 0-127 a 0-10
 			outputs[STRIKE].setVoltage((strike[channel] / 127.f) * 10.f, channel);
 			outputs[LIFT].setVoltage((lift[channel] / 127.f) * 10.f, channel);
-			outputs[PRESS].setVoltage((press[channel] / 127.f) * 10.f, channel);
+			outputs[PRESS].setVoltage(pressFilter[channel].process(args.sampleTime, (press[channel] / 127.f) * 10.f), channel);
 			outputs[SLIDE].setVoltage((slide[channel] / 127.f) * 10.f, channel);
 		}
 
