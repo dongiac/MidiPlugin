@@ -43,7 +43,7 @@ struct MidiMPEModule : Module {
 	// Inizializza i Glide in posizione Neutra
 	float glide[16];
 
-	int numberOfChannels = 15;
+	int numberOfChannels = 16;
 
 	bool modePoly; 
 
@@ -57,7 +57,7 @@ struct MidiMPEModule : Module {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(MODE_POLY, 0.f, 1.f, 1.f,"Rotative MPE");
 		for (int i = 0; i<16 ; i++){
-			pitchF[i].setTau(1/30.f);
+			pitchF[i].setTau(1/30.f); //moltiplica di 30 la differenza tra i due sengali campionati nel deltaTime
 			modwheelF[i].setTau(1/30.f);
 		}
 		parameterSet();
@@ -199,7 +199,7 @@ struct MidiMPEModule : Module {
 	int assignChannel (){
 		for (int c = 0; c<16; c++){
 			rotazione++;
-			if(rotazione > 15){
+			if(rotazione > 16){
 				rotazione = 0;
 			}
 			if(!gates[rotazione]){
