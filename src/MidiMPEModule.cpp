@@ -47,11 +47,19 @@ struct MidiMPEModule : Module {
 
 	bool modePoly; 
 
+	//dsp filters
+	dsp::ExponentialFilter pitchF[16];
+	dsp::ExponentialFilter modwheelF[16];
+
 	midi::InputQueue midiInput; 
 
 	MidiMPEModule() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(MODE_POLY, 0.f, 1.f, 1.f,"Rotative MPE");
+		for (int i = 0; i<16 ; i++){
+			pitchF[i].setTau(1/30.f);
+			modwheelF[i].setTau(1/30.f);
+		}
 		parameterSet();
 	}
 
@@ -65,6 +73,8 @@ struct MidiMPEModule : Module {
 			press[c]= 0;
 			slide[c] = 0;
 			modwheel[c] = 0;
+			pitchF[c].reset();
+			modwheelF[c].reset();
 		}
 	}
 
@@ -104,16 +114,16 @@ struct MidiMPEModule : Module {
 			for (int channel = 0; channel < 16; channel++){
 				outputs[GLIDE].setChannels(numberOfChannels);
 				outputs[MODWHEEL].setChannels(numberOfChannels);
-				outputs[MODWHEEL].setVoltage((modwheel[channel] / 127.f) * 10.f, channel);
+				outputs[MODWHEEL].setVoltage(modwheelF[channel].process(args.sampleTime, (modwheel[channel] / 127.f) * 10.f), channel);
 				// output glide tra -5V e 5V
-				outputs[GLIDE].setVoltage(((((glide[channel]) * 10.f )/ 16384.f ) - 5.f), channel);
+				outputs[GLIDE].setVoltage(pitchF[channel].process(args.sampleTime,(((glide[channel]) * 10.f )/ 16384.f ) - 5.f), channel);
 			} 
 		}else {
 			outputs[GLIDE].setChannels(1);
 			outputs[MODWHEEL].setChannels(1);
-			outputs[MODWHEEL].setVoltage((modwheel[0] / 127.f) * 10.f);
+			outputs[MODWHEEL].setVoltage(modwheelF[0].process(args.sampleTime, modwheel[0] / 127.f) * 10.f);
 			// output glide tra -5V e 5V
-			outputs[GLIDE].setVoltage(((((glide[0]) * 10.f )/ 16384.f ) - 5.f));
+			outputs[GLIDE].setVoltage(pitchF[0].process(args.sampleTime, (((glide[0]) * 10.f )/ 16384.f ) - 5.f));
 		}
 
 
