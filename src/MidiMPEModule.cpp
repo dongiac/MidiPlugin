@@ -30,6 +30,8 @@ struct MidiMPEModule : Module {
 		NUM_LIGHTS,
 	};
 
+	int rotazione;
+
 	uint8_t notes[16];//vettore dove vengono salvate le note 
 	uint8_t strike[16]; //note on velocity
 	uint8_t lift[16]; //note off velocity
@@ -80,13 +82,7 @@ struct MidiMPEModule : Module {
 		outputs[PRESS].setChannels(numberOfChannels);
 		outputs[SLIDE].setChannels(numberOfChannels);
 		outputs[LIFT].setChannels(numberOfChannels);
-		if(modePoly){
-			outputs[GLIDE].setChannels(numberOfChannels);
-			outputs[MODWHEEL].setChannels(numberOfChannels);
-		} else {
-			outputs[GLIDE].setChannels(1);
-			outputs[MODWHEEL].setChannels(1);
-		}
+
 		
 		//settare i Voltage di tutti i channel
 		for(int channel = 0; channel<16; channel++){
@@ -105,11 +101,15 @@ struct MidiMPEModule : Module {
 
 		if(modePoly){
 			for (int channel = 0; channel < 16; channel++){
+				outputs[GLIDE].setChannels(numberOfChannels);
+				outputs[MODWHEEL].setChannels(numberOfChannels);
 				outputs[MODWHEEL].setVoltage((modwheel[channel] / 127.f) * 10.f, channel);
 				// output glide tra -5V e 5V
 				outputs[GLIDE].setVoltage(((((glide[channel]) * 10.f )/ 16384.f ) - 5.f), channel);
 			} 
 		}else {
+				outputs[GLIDE].setChannels(1);
+			outputs[MODWHEEL].setChannels(1);
 				outputs[MODWHEEL].setVoltage((modwheel[0] / 127.f) * 10.f);
 				// output glide tra -5V e 5V
 				outputs[GLIDE].setVoltage(((((glide[0]) * 10.f )/ 16384.f ) - 5.f));
@@ -204,16 +204,20 @@ struct MidiMPEModule : Module {
 	}
 
 	int assignChannel (){
-		int channel;
-		for (channel = 0; channel<16; channel++){
-			if(!gates[channel]){
-				return channel;
+		for (int channel = 0; channel<16; channel++){
+			rotazione++;
+			if(rotazione >= 16){
+				rotazione = 0;
+			}
+			if(!gates[rotazione]){
+				return rotazione;
 			}
 		}
-		channel++;
-		if (channel>16){
-			return 0;
-		}else return channel;
+		rotazione++;
+		if (rotazione >= 16)
+			rotazione = 0;
+		return rotazione;
+		
 	}
 
 	void noteON(uint8_t note, int* channel){
