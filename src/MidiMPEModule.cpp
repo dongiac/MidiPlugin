@@ -30,7 +30,7 @@ struct MidiMPEModule : Module {
 		NUM_LIGHTS,
 	};
 
-	int rotazione;
+	int rotazione = -1;
 
 	uint8_t notes[16];//vettore dove vengono salvate le note 
 	uint8_t strike[16]; //note on velocity
@@ -45,7 +45,7 @@ struct MidiMPEModule : Module {
 
 	int numberOfChannels = 15;
 
-	bool modePoly = params[MODE_POLY].getValue(); //1 MPE 0 Rotative
+	bool modePoly; 
 
 	midi::InputQueue midiInput; 
 
@@ -70,6 +70,7 @@ struct MidiMPEModule : Module {
 
 	void process(const ProcessArgs &args) override {
 
+		modePoly = params[MODE_POLY].getValue(); //1 MPE 0 Rotative
 		midi::Message msg;
 		while (midiInput.shift(&msg)) {
 			processMSG(msg);
@@ -133,24 +134,6 @@ struct MidiMPEModule : Module {
 					noteON(msg.getNote(), &c);
 					strike[c] = msg.getValue();
 				}else noteOFF(msg.getNote(), 0);
-				/*
-				int channel = msg.getChannel();
-				if(!modePoly){ //se la modalità non è MPE
-					while(gates[channel] || notes[channel] != msg.getNote()){ //se il gate è attivo su quel channel 
-						channel++; //vai al channel successivo
-						if(channel == 16){ //se arrivo a 16 assegna il channel zero e il gate false, si riattiva dopo quando salva la nota
-							channel = 0;
-							gates[channel] = false;
-						}
-					}
-				}
-					notes[channel] = msg.getNote();
-					gates[channel] = true;					
-						// prendo la Velocity (Strike)
-						strike[channel] = msg.getValue();
-					if (strike[channel] == 0){
-						gates[channel] = false;
-					}*/
 			} break;
 			
 			case 0xa: {
@@ -204,9 +187,9 @@ struct MidiMPEModule : Module {
 	}
 
 	int assignChannel (){
-		for (int channel = 0; channel<16; channel++){
+		for (int c = 0; c<16; c++){
 			rotazione++;
-			if(rotazione >= 16){
+			if(rotazione > 15){
 				rotazione = 0;
 			}
 			if(!gates[rotazione]){
