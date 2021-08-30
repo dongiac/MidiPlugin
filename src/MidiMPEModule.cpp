@@ -43,6 +43,8 @@ struct MidiMPEModule : Module {
 	// Inizializza i Glide in posizione Neutra
 	float glide[16];
 
+	int numberOfChannels = 15;
+
 	bool modePoly = params[MODE_POLY].getValue(); //1 MPE 0 Rotative
 
 	midi::InputQueue midiInput; 
@@ -72,8 +74,6 @@ struct MidiMPEModule : Module {
 		while (midiInput.shift(&msg)) {
 			processMSG(msg);
 		}
-		int numberOfChannels = 15;
-		
 
 		//Set degli Output tutti a numberOfChannels
 		outputs[VOCT].setChannels(numberOfChannels);
@@ -108,11 +108,11 @@ struct MidiMPEModule : Module {
 				outputs[GLIDE].setVoltage(((((glide[channel]) * 10.f )/ 16384.f ) - 5.f), channel);
 			} 
 		}else {
-				outputs[GLIDE].setChannels(1);
+			outputs[GLIDE].setChannels(1);
 			outputs[MODWHEEL].setChannels(1);
-				outputs[MODWHEEL].setVoltage((modwheel[0] / 127.f) * 10.f);
-				// output glide tra -5V e 5V
-				outputs[GLIDE].setVoltage(((((glide[0]) * 10.f )/ 16384.f ) - 5.f));
+			outputs[MODWHEEL].setVoltage((modwheel[0] / 127.f) * 10.f);
+			// output glide tra -5V e 5V
+			outputs[GLIDE].setVoltage(((((glide[0]) * 10.f )/ 16384.f ) - 5.f));
 		}
 
 
