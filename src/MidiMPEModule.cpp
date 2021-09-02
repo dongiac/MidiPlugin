@@ -49,12 +49,17 @@ struct MidiMPEModule : Module {
 	
 	float nrpnData;
 	float nrpnControl;
-	float nrpnText;
+	int nrpnParam;
 	uint8_t nrpnControlMSB;
 	uint8_t nrpnControlLSB;
 	uint8_t nrpnDataMSB;
 	uint8_t nrpnDataLSB;
-	
+
+	bool CnrpnMSB;
+	bool CnrpnLSB;
+	bool DnrpnMSB;
+	bool DnrpnLSB;
+
 	int numberOfChannels = 16;
 
 	bool modePoly; 
@@ -97,6 +102,7 @@ struct MidiMPEModule : Module {
 	void process(const ProcessArgs &args) override {
 
 		modePoly = params[MODE_POLY].getValue(); //1 MPE 0 Rotative
+		nrpnParam = (int) params[NRPNDATA].getValue(); 
 		
 		midi::Message msg;
 		while (midiInput.shift(&msg)) {
@@ -208,11 +214,55 @@ struct MidiMPEModule : Module {
 					else{
 						modwheel[0] = msg.getValue();
 					}
-				}
+				} else NRPNfsm(msg.getChannel(), msg.getNote(), msg.getValue());
+
 			} break;
 
 			default: break;
 		}
+	}
+
+	void NRPNfsm(uint8_t channel, uint8_t note, uint8_t value){
+		if (channel != 0){
+			return;
+		} else switch(note){
+
+			case 99: {
+				nrpnControlMSB = value;
+				CnrpnMSB = 1;
+			} break;
+
+			case 98: {
+				nrpnControlLSB = value;
+				CnrpnLSB = 1;
+			} break;
+
+			case 6: {
+				nrpnDataMSB = value;
+				DnrpnMSB = 1;
+			} break;
+
+			case 38: {
+				nrpnDataLSB = value;
+				DnrpnLSB = 1;
+			} break;
+
+			default: return;
+		}
+
+		if (CnrpnMSB && CnrpnLSB){
+			nrpnControl = (uint16_t) nrpnControlMSB << 7 | nrpnControlLSB;
+			if(nrpnControl != nrpnParam){
+				lights[NRPNLED].setBrightness(0);
+				return;
+			}else{
+				lights[NRPNLED].setBrightness(1);
+				CnrpnMSB = 0;
+				CnrpnLSB = 0;
+			}
+		}
+
+
 	}
 
 	int assignChannel (){
