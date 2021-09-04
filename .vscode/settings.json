@@ -21,5 +21,34 @@
         "string_view": "cpp"
     },
     "C_Cpp.errorSquiggles": "Enabled",
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "terminal.integrated.automationShell.windows": "",
+    "terminal.integrated.env.windows": {
+
+
+        "MSYSTEM" : "MING64",
+        "CHERE_INVOKING" : "1"
+    },
+    "terminal.integrated.profiles.windows": {
+
+        "PowerShell": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell"
+        },
+        "Command Prompt": {
+            "path": [
+                "${env:windir}\\Sysnative\\cmd.exe",
+                "${env:windir}\\System32\\cmd.exe"
+            ],
+            "args": [],
+            "icon": "terminal-cmd"
+        },
+        "Git Bash": {
+            "source": "Git Bash"
+        },
+        "Mingw" : {
+            "path" : "C:\\msys64\\mingw64.exe",
+            "args" : []
+        }
+    }
 }

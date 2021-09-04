@@ -46,15 +46,14 @@ struct MidiMPEModule : Module {
 	bool gates[16];  
 	// Inizializza i Glide 
 	float glide[16];
-	
-	float nrpnData;
+	//inizializzazioni NRPN
+	float nrpnData = 0;
 	float nrpnControl;
 	int nrpnParam;
 	uint8_t nrpnControlMSB;
 	uint8_t nrpnControlLSB;
 	uint8_t nrpnDataMSB;
 	uint8_t nrpnDataLSB;
-
 	bool CnrpnMSB;
 	bool CnrpnLSB;
 	bool DnrpnMSB;
@@ -68,6 +67,7 @@ struct MidiMPEModule : Module {
 	dsp::ExponentialFilter pitchF[16];
 	dsp::ExponentialFilter modwheelF[16];
 	dsp::ExponentialFilter pressFilter[16];
+	dsp::ExponentialFilter nrpnFilter;
 
 	midi::InputQueue midiInput; 
 
@@ -121,6 +121,10 @@ struct MidiMPEModule : Module {
 		outputs[NRPN].setChannels(1);
 
 		//settare i Voltage di tutti i channel
+		//Nrpn
+		outputs[NRPN].setVoltage(nrpnFilter.process(args.sampleTime,(((nrpnData * 10.f) / 16384.f) - 5.f)));
+		lights[NRPNLED].setBrightness(0);
+		//Multichannels
 		for(int channel = 0; channel<16; channel++){
 
 			//ci sono da 0 a 11 ottave, ogni ottava è 12 "unità", se pongo 0V = C5 (60) allora vado da -5V(C0) a 5V(C11)
@@ -150,8 +154,6 @@ struct MidiMPEModule : Module {
 			// output glide tra -5V e 5V
 			outputs[GLIDE].setVoltage(pitchF[0].process(args.sampleTime, (((glide[0]) * 10.f )/ 16384.f ) - 5.f));
 		}
-
-
 	}
 	
 	void processMSG(midi::Message msg){
@@ -195,9 +197,9 @@ struct MidiMPEModule : Module {
 				//Pitch Wheel (Glide)
 				//Ho LSB (00-7F) su Note e MSB (00-7F) su Value, shifto value e sommo note
 				if(modePoly){
-					glide[msg.getChannel()] = ((uint16_t) msg.getValue() << 7) | msg.getNote();
+					glide[msg.getChannel()] = (uint16_t) msg.getValue() << 7 | msg.getNote();
 				} else {
-						glide[0] = ((uint16_t) msg.getValue() << 7) | msg.getNote();
+						glide[0] = (uint16_t) msg.getValue() << 7 | msg.getNote();
 					}
 			} break;
 			
@@ -250,18 +252,22 @@ struct MidiMPEModule : Module {
 			default: return;
 		}
 
-		if (CnrpnMSB && CnrpnLSB){
-			nrpnControl = (uint16_t) nrpnControlMSB << 7 | nrpnControlLSB;
-			if(nrpnControl != nrpnParam){
+		if (CnrpnMSB && CnrpnLSB && DnrpnMSB && DnrpnLSB){ //Verifica se il messaggio e il controllo NRPN sono completi
+			nrpnControl = (uint16_t) nrpnControlMSB << 7 | nrpnControlLSB; //se completo costruisce il Control
+			if(nrpnControl != nrpnParam){ //se il control non corrisponde con il parametro selezionato luce non attiva
 				lights[NRPNLED].setBrightness(0);
 				return;
-			}else{
+			}else{ //se corrisponde attiva il led e costruisce il messaggio
 				lights[NRPNLED].setBrightness(1);
+				nrpnData = (uint16_t) nrpnDataMSB << 7 | nrpnDataLSB;
 				CnrpnMSB = 0;
 				CnrpnLSB = 0;
+				DnrpnLSB = 0;
+				DnrpnMSB = 0;
 			}
+			
 		}
-
+		
 
 	}
 
