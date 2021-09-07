@@ -34,7 +34,7 @@ struct MidiMPEModule : Module {
 		NUM_LIGHTS,
 	};
 
-	int rotazione = -1;
+	int rotazione;
 
 	uint8_t notes[16];//vettore dove vengono salvate le note 
 	uint8_t strike[16]; //note on velocity
@@ -47,7 +47,7 @@ struct MidiMPEModule : Module {
 	// Inizializza i Glide 
 	float glide[16];
 	//inizializzazioni NRPN
-	float nrpnData = 0;
+	float nrpnData;
 	float nrpnControl;
 	int nrpnParam;
 	uint8_t nrpnControlMSB;
@@ -95,6 +95,7 @@ struct MidiMPEModule : Module {
 			modwheel[c] = 0;
 			pitchF[c].reset();
 			modwheelF[c].reset();
+			rotazione = -1;
 			nrpnData = 0;
 		}
 	}
@@ -123,7 +124,7 @@ struct MidiMPEModule : Module {
 		//settare i Voltage di tutti i channel
 		//Nrpn
 		outputs[NRPN].setVoltage(nrpnFilter.process(args.sampleTime,(((nrpnData * 10.f) / 16384.f) - 5.f)));
-		lights[NRPNLED].setBrightness(0);
+		//lights[NRPNLED].setBrightness(0);
 		//Multichannels
 		for(int channel = 0; channel<16; channel++){
 
@@ -204,6 +205,14 @@ struct MidiMPEModule : Module {
 			} break;
 			
 			case 0xb: {
+				//All Control Off
+				if(msg.getNote() == 121){
+					for(int i = 0; i<16; i++){
+						slide[i] = 0;
+						modwheelF[i].reset();
+						nrpnData = 0;
+					}
+				}
 				//CC74 (Slide)
 				if(msg.getNote() == 74){ //la roli manda sul controller 74
 					slide[msg.getChannel()] = msg.getValue();
@@ -266,7 +275,7 @@ struct MidiMPEModule : Module {
 				DnrpnMSB = 0;
 			}
 			
-		}
+		} else lights[NRPNLED].setBrightness(0);
 		
 
 	}
@@ -306,6 +315,13 @@ struct MidiMPEModule : Module {
 	}
 
 
+};
+
+struct ResetItem : MenuItem {
+	MidiMPEModule* module;
+	void onAction(const event::Action& e) override {
+		module->parameterSet();
+	}
 };
 
 /* MODULE WIDGET */
@@ -348,7 +364,18 @@ struct MidiMPEModuleWidget : ModuleWidget {
 
 		//NRPN Parameter
 		addParam(createLightParam<LEDLightSliderHorizontal<GreenLight>>((mm2px(Vec(15,115))), module, MidiMPEModule::NRPNDATA, MidiMPEModule::NRPNLED));
+	
+	}
 
+	void appendContextMenu(Menu* menu) override {
+		MidiMPEModule* module = dynamic_cast<MidiMPEModule*>(this->module);
+
+		menu->addChild(new MenuEntry);
+
+		ResetItem* resetItem = new ResetItem;
+		resetItem->text = "Reset";
+		resetItem->module = module;
+		menu->addChild(resetItem);
 	
 	}
 };
