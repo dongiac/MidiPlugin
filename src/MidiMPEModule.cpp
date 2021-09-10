@@ -339,7 +339,7 @@ struct MidiMPEModuleWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		//Modulo per scelta ingressi MIDI 
-		MidiWidget* midiWidget = createWidget<MidiWidget>(mm2px(Vec(5, 15)));
+		MidiWidget* midiWidget = createWidget<MidiWidget>(mm2px(Vec(4, 12)));
 		midiWidget->box.size = mm2px(Vec(47, 28));
 		midiWidget->setMidiPort(module ? &module->midiInput : NULL);
 		addChild(midiWidget);
