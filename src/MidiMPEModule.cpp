@@ -1,4 +1,5 @@
 #include "MidiMPE.hpp"
+#include "widget.hpp"
 
 using namespace std;
 
@@ -70,6 +71,7 @@ struct MidiMPEModule : Module {
 	dsp::ExponentialFilter nrpnFilter;
 
 	midi::InputQueue midiInput; 
+	Widget::DrawArgs args;
 
 	MidiMPEModule() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
@@ -338,32 +340,33 @@ struct MidiMPEModuleWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
+		
 		//Modulo per scelta ingressi MIDI 
-		MidiWidget* midiWidget = createWidget<MidiWidget>(mm2px(Vec(4, 12)));
-		midiWidget->box.size = mm2px(Vec(47, 28));
+		MidiWidget* midiWidget = createWidget<MidiWidget>(mm2px(Vec(6, 12)));
+		midiWidget->box.size = mm2px(Vec(44, 28));
 		midiWidget->setMidiPort(module ? &module->midiInput : NULL);
 		addChild(midiWidget);
 		
 		//Crea un interruttore per scegliere MPE o Rotative
-		addParam(createParam<CKSS>(mm2px(Vec(21.5, 47)), module, MidiMPEModule::MODE_POLY));
+		addParam(createParam<CKSS>(mm2px(Vec(22, 47)), module, MidiMPEModule::MODE_POLY));
 
 		//Output generici MIDI
-		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,58.6)), module, MidiMPEModule::VOCT));
-		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,84)), module, MidiMPEModule::GATE));
-		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,71.5)), module, MidiMPEModule::MODWHEEL));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(18.2,58.65)), module, MidiMPEModule::VOCT));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(18.2,84)), module, MidiMPEModule::GATE));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(18.2,71.3)), module, MidiMPEModule::MODWHEEL));
 
 		//Output NRPN
-		addOutput(createOutput<PJ301MPort>(mm2px(Vec(17,96.7)), module, MidiMPEModule::NRPN));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(18.2,96.7)), module, MidiMPEModule::NRPN));
 
 		//Output Specifici MPE
-		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,46.5)), module, MidiMPEModule::STRIKE));
-		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,58.6)), module, MidiMPEModule::PRESS));		
-		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,71.5)), module, MidiMPEModule::GLIDE));
-		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,84)), module, MidiMPEModule::SLIDE));
-		addOutput(createOutput<PJ301MPort>(mm2px(Vec(42,96.7)), module, MidiMPEModule::LIFT));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(43.2,46.5)), module, MidiMPEModule::STRIKE));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(43.2,58.6)), module, MidiMPEModule::PRESS));		
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(43.2,71.4)), module, MidiMPEModule::GLIDE));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(43.2,84)), module, MidiMPEModule::SLIDE));
+		addOutput(createOutput<PJ301MPort>(mm2px(Vec(43.2,96.7)), module, MidiMPEModule::LIFT));
 
 		//NRPN Parameter
-		addParam(createLightParam<LEDLightSliderHorizontal<GreenLight>>((mm2px(Vec(15,115))), module, MidiMPEModule::NRPNDATA, MidiMPEModule::NRPNLED));
+		addParam(createLightParam<LEDLightSliderHorizontal<GreenLight>>((mm2px(Vec(15,114.7))), module, MidiMPEModule::NRPNDATA, MidiMPEModule::NRPNLED));
 	
 	}
 
@@ -378,6 +381,7 @@ struct MidiMPEModuleWidget : ModuleWidget {
 		menu->addChild(resetItem);
 	
 	}
+
 };
 
 

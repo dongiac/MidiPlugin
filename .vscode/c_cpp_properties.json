@@ -9,7 +9,10 @@
                 "C:/msys64/home/giaco/Rack/Rack/plugins/MidiPlugin/src",
                 "C:/msys64/home/giaco/Rack/Rack/include",
                 "C:/msys64/home/giaco/Rack/Rack/dep/glew-2.1.0/include",
-                "C:/msys64/home/giaco/Rack/Rack/dep/include"
+                "C:/msys64/home/giaco/Rack/Rack/dep/include",
+                "C:/msys64/home/giaco/Rack/Rack/include/widget",
+                "${workspaceFolder}",
+                "C:/msys64/home/giaco"
             ],
             "defines": [
                 "_DEBUG",
